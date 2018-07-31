@@ -63,8 +63,8 @@ module VersionList
         def load_issue_statuses
           @open_status_ids = IssueStatus.where("name LIKE 'new' OR name LIKE 'in progress' OR name LIKE 'reopen'")
             .pluck(:id).collect { |id| id.to_i.to_s }
-          @resolved_status_id = IssueStatus.where("name LIKE 'resolved'").first.try :id
-          @deployed_status_id = IssueStatus.where("name LIKE 'deployed'").first.try :id
+          @resolved_status_id = IssueStatus.where("LOWER(name) = 'resolved'").first.try :id
+          @deployed_status_id = IssueStatus.where("LOWER(name) = 'deployed'").first.try :id
         end
 
         alias_method :index, :index_with_filter
