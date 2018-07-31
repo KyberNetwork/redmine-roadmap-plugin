@@ -24,16 +24,32 @@
                :locals => {:content => version.wiki_page.content}) if version.wiki_page %>
     <% if (issues = @issues_by_version[version]) && issues.size > 0 %>
       <%= form_tag({}, :data => {:cm_url => issues_context_menu_path}) do -%>
+        <% query_options = nil unless defined?(query_options) %>
+        <% query_options ||= {} %>
         <table class="list related-issues">
           <caption><%= l(:label_related_issues) %></caption>
-          <% issues.each do |issue| -%>
-            <tr class="hascontextmenu">
-              <td class="checkbox"><%= check_box_tag 'ids[]', issue.id, false, :id => nil %></td>
-              <td class="subject"><%= link_to_issue(issue, :project => (@project != issue.project)) %></td>
-              <td><%= issue.status.name %></td>
-              <td><%= link_to_user issue.assigned_to %></td>
+          <thead>
+            <tr>
+              <% tracker = @query.inline_columns.detect {|c| c.name == :tracker} %>
+              <% status = @query.inline_columns.detect {|c| c.name == :status} %>
+              <% assigned_to = @query.inline_columns.detect {|c| c.name == :assigned_to} %>
+
+              <%= column_header(@query, tracker, query_options) %>
+              <%= column_header(@query, status, query_options) %>
+              <%= column_header(@query, assigned_to, query_options) %>
+              <th class="buttons"></th>
             </tr>
-          <% end -%>
+          </thead>
+          <tbody>
+            <% issues.each do |issue| -%>
+              <tr class="hascontextmenu">
+                <td class="checkbox"><%= check_box_tag 'ids[]', issue.id, false, :id => nil %></td>
+                <td class="subject"><%= link_to_issue(issue, :project => (@project != issue.project)) %></td>
+                <td><%= issue.status.name %></td>
+                <td><%= link_to_user issue.assigned_to %></td>
+              </tr>
+            <% end -%>
+          </tbody>
         </table>
       <% end %>
     <% end %>
@@ -44,59 +60,82 @@
 <% end %>
 
 <% content_for :sidebar do %>
-<%= form_tag({}, :method => :get) do %>
-<h3><%= l(:label_roadmap) %></h3>
-<ul>
-<% @trackers.each do |tracker| %>
-  <li>
-    <label>
-      <%= check_box_tag("tracker_ids[]", tracker.id,
-                        (@selected_tracker_ids.include? tracker.id.to_s),
-                        :id => nil) %>
-      <%= tracker.name %>
-    </label>
-  </li>
-<% end %>
-</ul>
-<p></p>
-<ul>
-  <li>
-    <label for="completed">
-      <%= check_box_tag "completed", 1, params[:completed] %> <%= l(:label_show_completed_versions) %>
-    </label>
-  </li>
-  <% if @project.descendants.active.any? %>
-  <li>
-    <%= hidden_field_tag 'with_subprojects', 0, :id => nil %>
-    <label>
-      <%= check_box_tag 'with_subprojects', 1, @with_subprojects %> <%=l(:label_subproject_plural)%>
-    </label>
-  </li>
+  <%= form_tag({}, :method => :get) do %>
+    <h3><%= l(:label_roadmap) %></h3>
+    <ul>
+      <% @trackers.each do |tracker| %>
+        <li>
+          <label>
+            <%= check_box_tag("tracker_ids[]", tracker.id,
+              (@selected_tracker_ids.include? tracker.id.to_s), id: nil) %>
+            <%= tracker.name %>
+          </label>
+        </li>
+      <% end %>
+    </ul>
+    <p></p>
+    <ul>
+      <li>
+        <label>
+          <%= check_box_tag("status_ids[]", "OPEN_STT",
+             (@open_status_ids - @selected_status_ids).blank?, id: nil) %>
+          <%= "Open (New, Reopen, In progress)" %>
+        </label>
+      </li>
+      <li>
+        <label>
+          <%= check_box_tag("status_ids[]", @resolved_status_id,
+            (@selected_status_ids.include? @resolved_status_id.to_s), id: nil) %>
+          <%= "Resolved" %>
+        </label>
+      </li>
+      <li>
+        <label>
+          <%= check_box_tag("status_ids[]", @deployed_status_id,
+              (@selected_status_ids.include? @deployed_status_id.to_s), id: nil) %>
+          <%= "Deployed" %>
+        </label>
+      </li>
+    </ul>
+    <p></p>
+    <ul>
+      <li>
+        <label for="completed">
+          <%= check_box_tag "completed", 1, params[:completed] %> <%= l(:label_show_completed_versions) %>
+        </label>
+      </li>
+      <% if @project.descendants.active.any? %>
+      <li>
+        <%= hidden_field_tag 'with_subprojects', 0, :id => nil %>
+        <label>
+          <%= check_box_tag 'with_subprojects', 1, @with_subprojects %> <%=l(:label_subproject_plural)%>
+        </label>
+      </li>
+      <% end %>
+    </ul>
+    <p><%= submit_tag l(:button_apply), :class => 'button-small', :name => nil %></p>
   <% end %>
-</ul>
-<p><%= submit_tag l(:button_apply), :class => 'button-small', :name => nil %></p>
-<% end %>
 
-<h3><%= l(:label_version_plural) %></h3>
-<ul>
-<% @versions.each do |version| %>
-  <li>
-    <%= link_to(format_version_name(version), "##{version_anchor(version)}") %>
-  </li>
-<% end %>
-</ul>
-<% if @completed_versions.present? %>
-<p>
-  <%= link_to_function l(:label_completed_versions),
-                       '$("#toggle-completed-versions").toggleClass("collapsed"); $("#completed-versions").toggle()',
-                       :id => 'toggle-completed-versions', :class => 'collapsible collapsed' %>
-  <ul id = "completed-versions" style = "display:none;">
-    <% @completed_versions.each do |version| %>
-      <li><%= link_to_version version %></li>
+  <h3><%= l(:label_version_plural) %></h3>
+  <ul>
+    <% @versions.each do |version| %>
+      <li>
+        <%= link_to(format_version_name(version), "##{version_anchor(version)}") %>
+      </li>
     <% end %>
   </ul>
-</p>
-<% end %>
+  <% if @completed_versions.present? %>
+    <p>
+      <%= link_to_function l(:label_completed_versions),
+                           '$("#toggle-completed-versions").toggleClass("collapsed"); $("#completed-versions").toggle()',
+                           :id => 'toggle-completed-versions', :class => 'collapsible collapsed' %>
+      <ul id = "completed-versions" style = "display:none;">
+        <% @completed_versions.each do |version| %>
+          <li><%= link_to_version version %></li>
+        <% end %>
+      </ul>
+    </p>
+  <% end %>
 <% end %>
 
 <% html_title(l(:label_roadmap)) %>
