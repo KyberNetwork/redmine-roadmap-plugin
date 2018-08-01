@@ -31,12 +31,13 @@
           <thead>
             <tr>
               <% tracker = @query.inline_columns.detect {|c| c.name == :tracker} %>
+              <% subject = @query.inline_columns.detect {|c| c.name == :subject} %>
               <% status = @query.inline_columns.detect {|c| c.name == :status} %>
               <% assigned_to = @query.inline_columns.detect {|c| c.name == :assigned_to} %>
 
-              <%= column_header(@query, tracker, query_options) %>
-              <%= column_header(@query, status, query_options) %>
-              <%= column_header(@query, assigned_to, query_options) %>
+              <%= column_header(@query, tracker || subject, query_options) if tracker || subject %>
+              <%= column_header(@query, status, query_options) if status %>
+              <%= column_header(@query, assigned_to, query_options) if assigned_to %>
               <th class="buttons"></th>
             </tr>
           </thead>
