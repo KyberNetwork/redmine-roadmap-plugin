@@ -61,7 +61,7 @@ module VersionList
         end
 
         def load_issue_statuses
-          @open_status_ids = IssueStatus.where("LOWER(name) = 'new' OR LOWER(name) = 'in progress' OR LOWER(name) = 'reopen'")
+          @open_status_ids = IssueStatus.where("LOWER(name) = 'new' OR LOWER(name) = 'in progress' OR LOWER(name) = 'reopened'")
             .pluck(:id).collect { |id| id.to_i.to_s }
           @resolved_status_id = IssueStatus.where("LOWER(name) = 'resolved'").first.try :id
           @deployed_status_id = IssueStatus.where("LOWER(name) = 'deployed'").first.try :id
