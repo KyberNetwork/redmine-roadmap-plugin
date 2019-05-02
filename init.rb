@@ -7,5 +7,6 @@ Redmine::Plugin.register :roadmap do
 
   Rails.configuration.to_prepare do 
     VersionsController.send(:include, VersionList::VersionsControllerPatch)
+    Project.send(:include, ProjectPatch)
   end
 end
