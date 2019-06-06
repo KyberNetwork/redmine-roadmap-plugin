@@ -32,8 +32,8 @@ module VersionList
 
               if @selected_tracker_ids.any? && @versions.any?
                 issues = Issue.visible.
-                  joins(:status, :assigned_to).
-                  includes(:tracker, project: :enumerations).
+                  joins(:status).
+                  includes(:tracker, :assigned_to, project: :enumerations).
                   preload(:status, :priority, :fixed_version).
                   where(status_id: @selected_status_ids, tracker_id: @selected_tracker_ids, project_id: project_ids, fixed_version_id: @versions.map(&:id)).
                   order(order_option)
